@@ -12,14 +12,13 @@ public class DistanceService {
 
     public Mono<Double> calculateDistanceFromPlace(String imo, String apiKey, String place) {
 
-        // 1️⃣ Récupérer les coordonnées du lieu dynamique
         Mono<Double[]> placeMono = webClient.get()
                 .uri("https://nominatim.openstreetmap.org/search?q=" + place + "&format=json")
-                .header("User-Agent", "VesselTrackerApp/1.0 (hamza.laabail.uhp@gmail.com)")
+                .header("User-Agent", "VesselTrackerApp/1.0")
                 .retrieve()
                 .bodyToMono(Object[].class)
                 .map(arr -> {
-                    @SuppressWarnings("unchecked")
+
                     var first = (java.util.Map<String, Object>) arr[0];
 
                     double lat = Double.parseDouble((String) first.get("lat"));
@@ -28,7 +27,6 @@ public class DistanceService {
                     return new Double[]{lat, lon};
                 });
 
-        // 2️⃣ Récupérer la position du navire
         Mono<Double[]> vesselMono = webClient.get()
                 .uri("https://api.marinesia.com/api/v2/vessel/location/latest?imo=" + imo + "&key=" + apiKey)
                 .retrieve()
@@ -43,7 +41,6 @@ public class DistanceService {
                     return new Double[]{lat, lon};
                 });
 
-        // 3️⃣ Calculer la distance
         return Mono.zip(placeMono, vesselMono)
                 .map(tuple -> {
 
@@ -54,7 +51,6 @@ public class DistanceService {
                 });
     }
 
-    // Formule de Haversine
     private double haversine(double lat1, double lon1, double lat2, double lon2) {
 
         final int R = 6371;

@@ -1,11 +1,12 @@
 package com.VesselTracker.VesselTracker.controller;
 
-import com.VesselTracker.VesselTracker.service.DistanceService;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.VesselTracker.VesselTracker.service.DistanceService;
 
 import reactor.core.publisher.Mono;
 
