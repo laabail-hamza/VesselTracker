@@ -8,10 +8,12 @@ import reactor.core.publisher.Mono;
 @Service
 public class DistanceService {
 
-    private final WebClient webClient = WebClient.create();
+    // meilleure configuration du client HTTP
+    private final WebClient webClient = WebClient.builder().build();
 
     public Mono<Double> calculateDistanceFromPlace(String imo, String apiKey, String place) {
 
+        // 1️⃣ récupérer les coordonnées du lieu
         Mono<Double[]> placeMono = webClient.get()
                 .uri("https://nominatim.openstreetmap.org/search?q=" + place + "&format=json")
                 .header("User-Agent", "VesselTrackerApp/1.0")
@@ -27,6 +29,7 @@ public class DistanceService {
                     return new Double[]{lat, lon};
                 });
 
+        // 2️⃣ récupérer la position du navire
         Mono<Double[]> vesselMono = webClient.get()
                 .uri("https://api.marinesia.com/api/v2/vessel/location/latest?imo=" + imo + "&key=" + apiKey)
                 .retrieve()
@@ -41,6 +44,7 @@ public class DistanceService {
                     return new Double[]{lat, lon};
                 });
 
+        // 3️⃣ calcul de la distance
         return Mono.zip(placeMono, vesselMono)
                 .map(tuple -> {
 
@@ -51,9 +55,10 @@ public class DistanceService {
                 });
     }
 
+    // formule de Haversine
     private double haversine(double lat1, double lon1, double lat2, double lon2) {
 
-        final int R = 6371;
+        final int R = 6371; // rayon terre en km
 
         double dLat = Math.toRadians(lat2 - lat1);
         double dLon = Math.toRadians(lon2 - lon1);

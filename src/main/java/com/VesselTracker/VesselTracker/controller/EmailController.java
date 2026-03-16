@@ -11,6 +11,7 @@ import com.VesselTracker.VesselTracker.service.DistanceService;
 import reactor.core.publisher.Mono;
 
 @RestController
+
 public class EmailController {
 
     private final JavaMailSender mailSender;
@@ -22,36 +23,37 @@ public class EmailController {
     }
 
     @GetMapping("/send-distance-email")
-    public Mono<String> sendDistanceEmail(
-            @RequestParam String imo,
-            @RequestParam String apiKey,
-            @RequestParam String place,
-            @RequestParam String email) {
+public Mono<String> sendDistanceEmail(
+        @RequestParam String imo,
+        @RequestParam String apiKey,
+        @RequestParam String place,
+        @RequestParam String email) {
 
-        return distanceService.calculateDistanceFromPlace(imo, apiKey, place)
-                .map(distance -> {
+    return distanceService.calculateDistanceFromPlace(imo, apiKey, place)
+            .map(distance -> {
+                String distanceText = String.format("%.2f km", distance);
 
-                    String text = "Distance entre " + place +
-                            " et le navire : " +
-                            String.format("%.2f km", distance);
-
+                if (distance < 20000) {
                     try {
-
                         SimpleMailMessage message = new SimpleMailMessage();
-
                         message.setFrom("hamza.laabail.uhp@gmail.com");
                         message.setTo(email);
-                        message.setSubject("Distance du navire");
-                        message.setText(text);
-
+                        message.setSubject("Navire proche de " + place);
+                        message.setText("Le navire est proche de " + place +
+                                        "\nDistance actuelle : " + distanceText);
                         mailSender.send(message);
-
-                        return "Email envoyé avec succès : " + text;
-
+                        return "Email envoyé ✔ Distance : " + distanceText;
                     } catch (Exception e) {
-                        return "Erreur lors de l'envoi : " + e.getMessage();
+                        e.printStackTrace(); // <- Ajoute cette ligne
+                        return "Erreur email : " + e.getMessage();
                     }
-
-                });
-    }
+                } else {
+                    return "Distance trop grande (" + distanceText + ") → email non envoyé";
+                }
+            })
+            .onErrorResume(e -> {
+                e.printStackTrace(); // <- Ajoute cette ligne
+                return Mono.just("Erreur serveur : " + e.getMessage());
+            });
+}
 }
