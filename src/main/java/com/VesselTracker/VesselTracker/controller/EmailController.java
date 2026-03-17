@@ -1,5 +1,6 @@
 package com.VesselTracker.VesselTracker.controller;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +15,10 @@ import reactor.core.publisher.Mono;
 public class EmailController {
 private final JavaMailSender mailSender;
 private final DistanceService distanceService;
+@Value("${app.api.key}")
+private String apiKey;
+@Value("${app.mail.from}")
+private String fromEmail;
 
 public EmailController(JavaMailSender mailSender, DistanceService distanceService) {
     this.mailSender = mailSender;
@@ -23,7 +28,6 @@ public EmailController(JavaMailSender mailSender, DistanceService distanceServic
 @GetMapping("/send-distance-email")
 public Mono<String> sendDistanceEmail(
         @RequestParam String imo,
-        @RequestParam String apiKey,
         @RequestParam String place,
         @RequestParam String email) {
 
@@ -39,7 +43,7 @@ public Mono<String> sendDistanceEmail(
 
                         SimpleMailMessage message = new SimpleMailMessage();
 
-                        message.setFrom("hamza.laabail.uhp@gmail.com");
+                        message.setFrom(fromEmail);
                         message.setTo(email);
                         message.setSubject("Navire proche du port de " + place);
 
