@@ -11,18 +11,16 @@ import com.VesselTracker.VesselTracker.service.DistanceService;
 import reactor.core.publisher.Mono;
 
 @RestController
-
 public class EmailController {
+private final JavaMailSender mailSender;
+private final DistanceService distanceService;
 
-    private final JavaMailSender mailSender;
-    private final DistanceService distanceService;
+public EmailController(JavaMailSender mailSender, DistanceService distanceService) {
+    this.mailSender = mailSender;
+    this.distanceService = distanceService;
+}
 
-    public EmailController(JavaMailSender mailSender, DistanceService distanceService) {
-        this.mailSender = mailSender;
-        this.distanceService = distanceService;
-    }
-
-    @GetMapping("/send-distance-email")
+@GetMapping("/send-distance-email")
 public Mono<String> sendDistanceEmail(
         @RequestParam String imo,
         @RequestParam String apiKey,
@@ -31,29 +29,54 @@ public Mono<String> sendDistanceEmail(
 
     return distanceService.calculateDistanceFromPlace(imo, apiKey, place)
             .map(distance -> {
+
                 String distanceText = String.format("%.2f km", distance);
 
-                if (distance < 20000) {
+                // 🚢 Si le navire est proche
+                if (distance < 5) {
+
                     try {
+
                         SimpleMailMessage message = new SimpleMailMessage();
+
                         message.setFrom("hamza.laabail.uhp@gmail.com");
                         message.setTo(email);
-                        message.setSubject("Navire proche de " + place);
-                        message.setText("Le navire est proche de " + place +
-                                        "\nDistance actuelle : " + distanceText);
+                        message.setSubject("Navire proche du port de " + place);
+
+                        message.setText(
+                                "Bonjour,\n\n" +
+                                "Le navire est proche du port de " + place + ".\n\n" +
+                                "Distance actuelle : " + distanceText + ".\n\n" +
+                                "Le navire va bientôt arriver au port."
+                        );
+
                         mailSender.send(message);
-                        return "Email envoyé ✔ Distance : " + distanceText;
+
+                        return "Email envoyé ✔ Le navire est proche du port de "
+                                + place + " (" + distanceText + ").";
+
                     } catch (Exception e) {
-                        e.printStackTrace(); // <- Ajoute cette ligne
-                        return "Erreur email : " + e.getMessage();
+
+                        e.printStackTrace();
+                        return "Erreur lors de l'envoi de l'email : " + e.getMessage();
                     }
-                } else {
-                    return "Distance trop grande (" + distanceText + ") → email non envoyé";
                 }
+
+                // 🚢 Si le navire est loin
+                else {
+
+                    return "Le navire est encore loin du port de "
+                            + place + " (" + distanceText + "). "
+                            + "Vous recevrez un email lorsqu'il sera proche.";
+                }
+
             })
             .onErrorResume(e -> {
-                e.printStackTrace(); // <- Ajoute cette ligne
+
+                e.printStackTrace();
                 return Mono.just("Erreur serveur : " + e.getMessage());
             });
 }
+
+
 }
